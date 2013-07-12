@@ -3,14 +3,14 @@ var infile="index.html";
 var outbuffer=new Buffer(40);
 
 outbuffer = fs.readFileSync(infile);
-var out = outbuffer.toString();
+var outstring = outbuffer.toString();
 
 var express = require('express');
 
 var app = express.createServer(express.logger());
 
 app.get('/', function(request, response) {
-  response.send('Hello World!3');
+  response.send(outstring);
 });
 
 var port = process.env.PORT || 5000;
