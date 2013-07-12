@@ -1,6 +1,6 @@
 var fs=require('fs');
 var infile="index.html";
-var outbuffer=new Buffer(40);
+var outbuffer=new Buffer(4096);
 
 outbuffer = fs.readFileSync(infile);
 var outstring = outbuffer.toString();
