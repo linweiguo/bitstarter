@@ -19,13 +19,21 @@ References:
    - http://en.wikipedia.org/wiki/JSON
    - https://developer.mozilla.org/en-US/docs/JSON
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
+ + rester.js
+   - https://github.com/danwrong/restler
 */
 
 var fs = require('fs');
-var program = require('commander');
+
+var URL = require('url');
+var rest = require('restler'); 
 var cheerio = require('cheerio');
+var program = require('commander');
+
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+
+var URL_DEFAULT = "http://calm-sierra-2052.herokuapp.com/";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -36,13 +44,60 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
+var assertURLExists =function(inURL){
+    var instr = inURL.toString();
+    var parsed = URL.parse(instr);
+
+    if (parsed.protocol!='http:'){
+	console.log("%s not valid. Exiting",instr);
+	process.exit(1);
+    }
+    return instr;
+};
+
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
+/*
+var cheerioUrlPage = function(UrlPage){
+    rest.get(UrlPage).on('complete', function(result) {
+	if (result instanceof Error) {
+ 	    console.log('HTTP Error: ' + result.message);
+	    process.exit(1);
+	}else{
+	    return cheerio.load(result.toString());
+	}
+    });
+};
+*/
+
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
+
+var checkUrlPage  = function(urlpage, checksfile) {
+    rest.get(urlpage).on('complete', function(result) {
+        if (result instanceof Error) {
+            console.log('HTTP Error: ' + result.message);
+            process.exit(1);
+        }else{
+            $ = cheerio.load(result);
+	    var checks = loadChecks(checksfile).sort();
+	    var out = {};
+	    for(var ii in checks) {
+		var present = $(checks[ii]).length > 0;
+		out[checks[ii]] = present;
+	    }
+	    
+	    var outJson = JSON.stringify(out, null, 4);
+	    console.log(outJson);
+	    
+	    return outJson;
+        }
+    });
+};
+
 
 var checkHtmlFile = function(htmlfile, checksfile) {
     $ = cheerioHtmlFile(htmlfile);
@@ -64,11 +119,20 @@ var clone = function(fn) {
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists))
+        .option('-u, --url <url_webpage>','URL to web page', clone(assertURLExists))
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    
+    if (!program.file && !program.url) program.file = HTMLFILE_DEFAULT;
+    if (program.file) {
+	checkJson = checkHtmlFile(program.file, program.checks);
+	var checkJson;
+	var outJson = JSON.stringify(checkJson, null, 4);
+	console.log(outJson);
+    }
+
+    if (program.url)  checkJson = checkUrlPage(program.url,   program.checks);
+
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
