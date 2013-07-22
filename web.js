@@ -1,6 +1,6 @@
 var fs=require('fs');
 var infile="index.html";
-var outbuffer=new Buffer(4096);
+var outbuffer=new Buffer(40960);
 
 outbuffer = fs.readFileSync(infile);
 var outstring = outbuffer.toString();
@@ -13,7 +13,7 @@ app.get('/', function(request, response) {
   response.send(outstring);
 });
 
-var port = process.env.PORT || 5000;
+var port = process.env.PORT || 8080;
 app.listen(port, function() {
   console.log("Listening on " + port);
 });
